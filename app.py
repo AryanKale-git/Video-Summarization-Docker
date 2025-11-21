@@ -74,6 +74,12 @@ def init_db():
     conn.commit()
     conn.close()
 
+@app.cli.command('init-db')
+def init_db_command():
+    """Creates the database tables."""
+    init_db()
+    print('Initialized the database.')
+
 
 # Helper functions
 def generate_reset_token():
@@ -389,5 +395,4 @@ def upload():
     return send_file(output_path, as_attachment=True)
 
 if __name__ == "__main__":
-    init_db()
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
