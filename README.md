@@ -16,15 +16,83 @@ A Flask-based web application that summarizes videos by detecting and highlighti
 - Docker and Docker Compose (for containerized deployment)
 - OpenCV-compatible environment (includes numpy, opencv-python)
 
+## Repository Setup
+
+1. **Clone the repository**:
+   ```bash
+   git clone https://github.com/your-username/video-summarizer.git
+   cd video-summ-docker
+   ```
+
+2. **Create and switch to a feature branch** (for development):
+   ```bash
+   git checkout -b feature/your-feature-name
+   ```
+
+3. **Pull latest changes** (before starting work):
+   ```bash
+   git pull origin main
+   ```
+
+4. **Make changes and commit**:
+   ```bash
+   git add .
+   git commit -m "Add your commit message here"
+   ```
+
+5. **Push your changes**:
+   ```bash
+   git push origin feature/your-feature-name
+   ```
+
+6. **Create a pull request** (after pushing):
+   ```bash
+   gh pr create --title "Your PR title" --body "Description of changes"
+   ```
+   *Note: Requires GitHub CLI (`gh`) to be installed. Install with: `winget install --id GitHub.cli` (Windows) or follow [GitHub CLI installation guide](https://cli.github.com/).*
+
+### Additional Git Commands
+
+- **Check repository status**:
+  ```bash
+  git status
+  ```
+
+- **View commit history**:
+  ```bash
+  git log --oneline
+  ```
+
+- **View differences before committing**:
+  ```bash
+  git diff
+  ```
+
+- **Stash uncommitted changes**:
+  ```bash
+  git stash
+  ```
+
+- **Apply stashed changes**:
+  ```bash
+  git stash pop
+  ```
+
+- **Fetch latest changes without merging**:
+  ```bash
+  git fetch origin
+  ```
+
+- **Delete a local branch** (after merging):
+  ```bash
+  git branch -d feature/your-feature-name
+  ```
+
 ## Installation
 
 ### Local Development
 
-1. Clone the repository:
-   ```bash
-   git clone <repository-url>
-   cd video-summ-docker
-   ```
+1. Clone the repository (see Repository Setup above).
 
 2. Create a virtual environment:
    ```bash
