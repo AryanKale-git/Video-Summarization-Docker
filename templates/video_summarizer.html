@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Video Summarizer</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎬</text></svg>">
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(to right, #1e3c72, #2a5298);
+      color: #f1f1f1;
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      padding: 20px;
+    }
+
+    .header {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+
+    .welcome-text {
+      color: #e0e0e0;
+      font-size: 1rem;
+    }
+
+    .logout-btn {
+      background-color: #f44336;
+      color: white;
+      padding: 8px 16px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      text-decoration: none;
+      transition: background-color 0.3s ease;
+    }
+
+    .logout-btn:hover {
+      background-color: #d32f2f;
+    }
+
+    h1 {
+      margin-bottom: 10px;
+      font-size: 2.5rem;
+      text-align: center;
+      margin-top: 60px;
+    }
+
+    p {
+      font-size: 1.1rem;
+      color: #e0e0e0;
+      margin-bottom: 30px;
+      text-align: center;
+    }
+
+    .card {
+      background: rgba(255, 255, 255, 0.1);
+      padding: 30px;
+      border-radius: 15px;
+      backdrop-filter: blur(15px);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+      width: 100%;
+      max-width: 600px;
+      text-align: center;
+    }
+
+    .custom-file-input {
+      position: relative;
+      display: inline-block;
+      width: 100%;
+      margin-bottom: 20px;
+    }
+
+    .custom-file-input input[type="file"] {
+      opacity: 0;
+      width: 100%;
+      height: 50px;
+      position: absolute;
+      top: 0;
+      left: 0;
+      cursor: pointer;
+    }
+
+    .file-label {
+      background-color: #ffffff;
+      color: #333;
+      padding: 14px;
+      border-radius: 10px;
+      font-size: 1rem;
+      transition: background 0.3s ease;
+      text-align: center;
+    }
+
+    .file-label:hover {
+      background-color: #f0f0f0;
+    }
+
+    .file-name {
+      margin-top: 10px;
+      font-size: 0.9rem;
+      color: #ccc;
+    }
+
+    button {
+      width: 100%;
+      padding: 12px;
+      margin-top: 20px;
+      font-size: 1rem;
+      background-color: #00bcd4;
+      color: white;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+
+    button:hover {
+      background-color: #0097a7;
+    }
+
+    video {
+      margin-top: 20px;
+      max-width: 100%;
+      border-radius: 10px;
+      display: none;
+    }
+
+    .loading,
+    .success-message {
+      margin-top: 20px;
+      font-size: 1rem;
+      display: none;
+    }
+
+    .loading {
+      color: #90caf9;
+      animation: pulse 1s infinite;
+    }
+
+    .success-message {
+      color: #a5d6a7;
+    }
+
+    #downloadBtn {
+      display: none;
+      margin-top: 15px;
+      background-color: #4caf50;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 0.5; }
+      50% { opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <span class="welcome-text">Welcome, {{ session.username }}!</span>
+    <a href="{{ url_for('logout') }}" class="logout-btn">Logout</a>
+  </div>
+
+  <h1>🎬 Video Summarizer</h1>
+  <p>Upload your video, watch it here, and download the summary once ready.</p>
+
+  <div class="card">
+    <form id="uploadForm" action="/upload" method="post" enctype="multipart/form-data">
+      <div class="custom-file-input">
+        <label class="file-label" id="fileLabel">Choose a video file</label>
+        <input type="file" id="videoInput" name="video" accept="video/*" required>
+        <div class="file-name" id="fileName">No file selected</div>
+      </div>
+
+      <video id="videoPlayer" controls></video>
+
+      <button type="submit">Summarize Video</button>
+
+      <div class="loading" id="loadingText">Processing your video...</div>
+      <div class="success-message" id="successMessage">✅ Summary is ready!</div>
+
+      <a href="/download/summary.txt" id="downloadBtn" download>Download Summary</a>
+    </form>
+  </div>
+
+  <script>
+    const videoInput = document.getElementById('videoInput');
+    const fileNameDisplay = document.getElementById('fileName');
+    const fileLabel = document.getElementById('fileLabel');
+    const videoPlayer = document.getElementById('videoPlayer');
+    const uploadForm = document.getElementById('uploadForm');
+    const loadingText = document.getElementById('loadingText');
+    const successMessage = document.getElementById('successMessage');
+    const downloadBtn = document.getElementById('downloadBtn');
+
+    videoInput.addEventListener('change', () => {
+      const file = videoInput.files[0];
+
+      if (file) {
+        fileNameDisplay.textContent = file.name;
+        fileLabel.textContent = 'Selected: ' + file.name;
+
+        // Create video preview
+        const videoURL = URL.createObjectURL(file);
+        videoPlayer.src = videoURL;
+        videoPlayer.style.display = 'block';
+      } else {
+        videoPlayer.style.display = 'none';
+        fileNameDisplay.textContent = 'No file selected';
+        fileLabel.textContent = 'Choose a video file';
+      }
+    });
+
+    uploadForm.addEventListener('submit', (e) => {
+      loadingText.style.display = 'block';
+      successMessage.style.display = 'none';
+      downloadBtn.style.display = 'none';
+
+      // Simulate processing delay
+      setTimeout(() => {
+        loadingText.style.display = 'none';
+        successMessage.style.display = 'block';
+        downloadBtn.style.display = 'inline-block';
+      }, 3000);
+    });
+  </script>
+</body>
+</html>

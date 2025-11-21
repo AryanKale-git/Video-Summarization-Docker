@@ -1,0 +1,11 @@
+services:
+  web:
+    build: .
+    ports:
+      - "5000:5000"
+    volumes:
+      # Mounts the instance folder to persist the database and uploads
+      - ./instance:/app/instance
+    # Load environment variables from the .env file in the same directory
+    env_file:
+      - .env
