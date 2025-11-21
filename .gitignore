@@ -34,3 +34,4 @@ instance/
 # Database files
 *.db
 
+.env

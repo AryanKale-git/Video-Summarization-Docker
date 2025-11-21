@@ -14,22 +14,28 @@ from email.mime.multipart import MIMEMultipart
 
 app = Flask(__name__)
 
+is_debug = os.environ.get('FLASK_DEBUG', 'false').lower() in ['true', '1', 't']
+
 # --- Configuration ---
 # Load secret key from environment variable. Fail if not set.
-app.secret_key = os.environ.get('SECRET_KEY')
-if not app.secret_key:
-    raise ValueError("No SECRET_KEY set for Flask application")
+SECRET_KEY = os.environ.get('SECRET_KEY')
+if not SECRET_KEY:
+    if not is_debug:
+        app.logger.warning("SECRET_KEY is not set! Using a default is insecure in production.")
+    app.secret_key = 'default-secret-key-for-dev'
+else:
+    app.secret_key = SECRET_KEY
 
 # Email configuration - CHANGE THESE TO YOUR ACTUAL EMAIL SETTINGS
 SMTP_SERVER = os.environ.get('SMTP_SERVER', 'smtp.gmail.com')
 SMTP_PORT = int(os.environ.get('SMTP_PORT', 587))
 EMAIL_ADDRESS = os.environ.get('EMAIL_ADDRESS')
 EMAIL_PASSWORD = os.environ.get('EMAIL_PASSWORD')
-if not (EMAIL_ADDRESS and EMAIL_PASSWORD):
-    app.logger.warning("Email credentials (EMAIL_ADDRESS, EMAIL_PASSWORD) are not set. Password reset will not work.")
 
 # Set the server name for external URL generation (e.g., 'localhost:5000')
 app.config['SERVER_NAME'] = os.environ.get('SERVER_NAME')
+if not app.config['SERVER_NAME'] and not is_debug:
+    app.logger.warning("SERVER_NAME is not set. External URLs (like for password reset) may not work.")
 
 # Create necessary directories
 os.makedirs(os.path.join(app.instance_path, 'uploads'), exist_ok=True)
@@ -80,6 +86,8 @@ def init_db_command():
     init_db()
     print('Initialized the database.')
 
+# Initialize the database
+init_db()
 
 # Helper functions
 def generate_reset_token():
@@ -395,4 +403,4 @@ def upload():
     return send_file(output_path, as_attachment=True)
 
 if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
+    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)), debug=is_debug)
