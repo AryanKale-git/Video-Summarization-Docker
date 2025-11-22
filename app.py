@@ -12,6 +12,11 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
+
 app = Flask(__name__)
 
 is_debug = os.environ.get('FLASK_DEBUG', 'false').lower() in ['true', '1', 't']
@@ -20,11 +25,9 @@ is_debug = os.environ.get('FLASK_DEBUG', 'false').lower() in ['true', '1', 't']
 # Load secret key from environment variable. Fail if not set.
 SECRET_KEY = os.environ.get('SECRET_KEY')
 if not SECRET_KEY:
-    if not is_debug:
-        app.logger.warning("SECRET_KEY is not set! Using a default is insecure in production.")
-    app.secret_key = 'default-secret-key-for-dev'
-else:
-    app.secret_key = SECRET_KEY
+    raise ValueError("SECRET_KEY is not set. Please set the SECRET_KEY environment variable.")
+app.secret_key = SECRET_KEY
+
 
 # Email configuration - CHANGE THESE TO YOUR ACTUAL EMAIL SETTINGS
 SMTP_SERVER = os.environ.get('SMTP_SERVER', 'smtp.gmail.com')
@@ -200,53 +203,55 @@ Video Summarizer Team
 
         return True
     except Exception as e:
-        print(f"Error sending email: {e}")
+        app.logger.error(f"Error sending email: {e}")
         return False
 
 
 # Video summarization function - keeping your original algorithm
 def summarize_video(input_path, output_path, frame_skip=5):
     cap = cv2.VideoCapture(input_path)
-    width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-    height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-    fps = int(cap.get(cv2.CAP_PROP_FPS)) // 2  # Reduce output video FPS
+    out = None  # Initialize out to None
+    try:
+        width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+        height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        fps = int(cap.get(cv2.CAP_PROP_FPS)) // 2  # Reduce output video FPS
 
-    fourcc = cv2.VideoWriter_fourcc(*"XVID")
-    out = cv2.VideoWriter(output_path, fourcc, fps, (width, height))
+        fourcc = cv2.VideoWriter_fourcc(*"XVID")
+        out = cv2.VideoWriter(output_path, fourcc, fps, (width, height))
 
-    back_sub = cv2.createBackgroundSubtractorMOG2(history=500, varThreshold=50)
-    frame_count = 0
+        back_sub = cv2.createBackgroundSubtractorMOG2(history=500, varThreshold=50)
+        frame_count = 0
 
-    while True:
-        ret, frame = cap.read()
-        if not ret:
-            break
+        while True:
+            ret, frame = cap.read()
+            if not ret:
+                break
 
-        frame_count += 1
-        if frame_count % frame_skip != 0:  # Skip frames for faster processing
-            continue
+            frame_count += 1
+            if frame_count % frame_skip != 0:  # Skip frames for faster processing
+                continue
 
-        mask = back_sub.apply(frame)
-        mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, np.ones((3, 3), np.uint8))
-        mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, np.ones((5, 5), np.uint8))
-        _, thresh = cv2.threshold(mask, 25, 255, cv2.THRESH_BINARY)
+            mask = back_sub.apply(frame)
+            mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, np.ones((3, 3), np.uint8))
+            mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, np.ones((5, 5), np.uint8))
+            _, thresh = cv2.threshold(mask, 25, 255, cv2.THRESH_BINARY)
 
-        contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        significant_movement = False
+            contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+            significant_movement = False
 
-        for contour in contours:
-            if cv2.contourArea(contour) > 1500:  # Filter based on contour size
-                significant_movement = True
-                x, y, w, h = cv2.boundingRect(contour)
-                cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
-                cv2.putText(frame, "Movement", (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX,
-                            0.5, (0, 255, 0), 2)
+            for contour in contours:
+                if cv2.contourArea(contour) > 1500:  # Filter based on contour size
+                    significant_movement = True
+                    x, y, w, h = cv2.boundingRect(contour)
+                    cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
 
-        if significant_movement:  # Only write frames with motion
-            out.write(frame)
-
-    cap.release()
-    out.release()
+            if significant_movement:  # Only write frames with motion
+                out.write(frame)
+    finally:
+        if cap:
+            cap.release()
+        if out:
+            out.release()
 
 
 # Routes

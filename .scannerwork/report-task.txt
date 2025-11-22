@@ -1,0 +1,6 @@
+projectKey=VideoSummarization
+serverUrl=http://localhost:9000
+serverVersion=25.11.0.114957
+dashboardUrl=http://localhost:9000/dashboard?id=VideoSummarization
+ceTaskId=7287616d-6fb9-4970-9a61-7cfda2f7e535
+ceTaskUrl=http://localhost:9000/api/ce/task?id=7287616d-6fb9-4970-9a61-7cfda2f7e535

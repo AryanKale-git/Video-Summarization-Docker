@@ -1,6 +1,7 @@
 services:
   web:
     build: .
+    container_name: my_web_app
     ports:
       - "5000:5000"
     volumes:
@@ -9,3 +10,17 @@ services:
     # Load environment variables from the .env file in the same directory
     env_file:
       - .env
+    networks:
+      - sonarnet
+
+  sonarqube:
+    image: sonarqube:community
+    container_name: sonarqube
+    ports:
+      - "9000:9000"
+    networks:
+      - sonarnet
+
+networks:
+  sonarnet:
+    driver: bridge
