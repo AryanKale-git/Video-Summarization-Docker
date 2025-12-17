@@ -4,11 +4,13 @@ metadata:
   name: 2401082-videosummdocker-ingress
   namespace: 2401082-videosummdocker
   annotations:
-    # nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/rewrite-target: /
     # Add other annotations if using specific Ingress Controller features
 spec:
+  ingressClassName: nginx
   rules:
-  - http:
+  - host: videosummdocker.imcc.com
+    http:
       paths:
       - path: /
         pathType: Prefix
