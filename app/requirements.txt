@@ -2,3 +2,5 @@ flask
 gunicorn
 numpy
 opencv-python-headless
+pytest
+pytest-cov

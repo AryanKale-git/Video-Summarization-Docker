@@ -76,8 +76,8 @@ spec:
             steps {
                 container('dind') {
                     sh '''
-                        docker run --rm $APP_NAME:$IMAGE_TAG \
-                        pytest --maxfail=1 --disable-warnings --cov=. --cov-report=xml
+                        docker run --rm -v $(pwd):/workspace -w /app $APP_NAME:$IMAGE_TAG \
+                        sh -c "pytest --maxfail=1 --disable-warnings --cov=. --cov-report=xml && cp coverage.xml /workspace/coverage.xml"
                     '''
                 }
             }
