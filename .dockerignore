@@ -9,3 +9,15 @@ __pycache__/
 .env
 users.db
 uploads/
+
+# Ignore Git files
+.git/
+
+# Ignore IDE files
+.idea/
+
+# Ignore Kubernetes manifests to keep image clean
+k8s-deployment/
+
+# Ignore Jenkinsfile
+Jenkinsfile

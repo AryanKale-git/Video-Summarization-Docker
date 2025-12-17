@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: 2401082-videosummdocker
+  namespace: 2401082-videosummdocker
+spec:
+  type: ClusterIP
+  selector:
+    app: 2401082-videosummdocker
+  ports:
+  - port: 80
+    targetPort: 5000
+    protocol: TCP

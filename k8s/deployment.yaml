@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: 2401082-videosummdocker
+  namespace: 2401082-videosummdocker
+  labels:
+    app: 2401082-videosummdocker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: 2401082-videosummdocker
+  template:
+    metadata:
+      labels:
+        app: 2401082-videosummdocker
+    spec:
+      imagePullSecrets:
+      - name: regcred
+      containers:
+      - name: 2401082-videosummdocker
+        image: nexus-service-for-docker-hosted-registry.nexus.svc.cluster.local:8085/2401082-videosummdocker/2401082-videosummdocker:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 5000
+        env:
+        - name: SECRET_KEY
+          value: "a-very-secure-secret-key-for-production"
+        - name: SMTP_SERVER
+          value: "smtp.gmail.com"
+        - name: SMTP_PORT
+          value: "587"
+        - name: EMAIL_ADDRESS
+          value: "your-email@gmail.com"
+        - name: EMAIL_PASSWORD
+          value: "your-app-password"
+        - name: SERVER_NAME
+          value: "localhost:5000"
+        volumeMounts:
+        - name: app-storage
+          mountPath: /app/instance
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+      volumes:
+      - name: app-storage
+        persistentVolumeClaim:
+          claimName: video-summ-pvc

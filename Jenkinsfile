@@ -1,87 +1,143 @@
 pipeline {
-    // Use an agent that has Docker, Python, and SonarScanner CLI installed.
-    agent any
+    agent {
+        kubernetes {
+            yaml '''
+apiVersion: v1
+kind: Pod
+spec:
+  containers:
+  - name: sonar-scanner
+    image: sonarsource/sonar-scanner-cli
+    command: ["cat"]
+    tty: true
 
-    // Define tools from Jenkins Global Tool Configuration
-    tools {
-        // This name must match the one in Manage Jenkins -> Global Tool Configuration
-        sonarScanner 'SonarScanner'
+  - name: kubectl
+    image: bitnami/kubectl:latest
+    command: ["cat"]
+    tty: true
+    securityContext:
+      runAsUser: 0
+      readOnlyRootFilesystem: false
+    env:
+    - name: KUBECONFIG
+      value: /kube/config
+    volumeMounts:
+    - name: kubeconfig-secret
+      mountPath: /kube/config
+      subPath: kubeconfig
+
+  - name: dind
+    image: docker:dind
+    securityContext:
+      privileged: true
+    env:
+    - name: DOCKER_TLS_CERTDIR
+      value: ""
+    volumeMounts:
+    - name: docker-config
+      mountPath: /etc/docker/daemon.json
+      subPath: daemon.json
+
+  volumes:
+  - name: docker-config
+    configMap:
+      name: docker-daemon-config
+  - name: kubeconfig-secret
+    secret:
+      secretName: kubeconfig-secret
+'''
+        }
     }
 
     environment {
-        // SonarQube server name from Jenkins system config
-        SONAR_SERVER = 'my-sonarqube-server'
-        // Docker registry URL (e.g., your Docker Hub username or private registry)
-        DOCKER_REGISTRY = 'your-docker-registry-placeholder'
-        // Define your application name for the Docker image
-        APP_NAME = 'video-summarizer'
+        APP_NAME        = "2401082-videosummdocker"
+        IMAGE_TAG       = "latest"
+        REGISTRY_URL    = "nexus-service-for-docker-hosted-registry.nexus.svc.cluster.local:8085"
+        REGISTRY_REPO   = "2401082-videosummdocker"
+        SONAR_PROJECT   = "2401082-videosummdocker"
+        SONAR_HOST_URL = "http://my-sonarqube-sonarqube.sonarqube.svc.cluster.local:9000"
     }
 
     stages {
-        stage('Checkout') {
+
+        stage('Build Docker Image') {
             steps {
-                echo 'Checking out source code...'
-                checkout scm
+                container('dind') {
+                    sh '''
+                        sleep 15
+                        docker build -t $APP_NAME:$IMAGE_TAG .
+                        docker images
+                    '''
+                }
             }
         }
 
-        stage('Install Dependencies') {
+        stage('Run Tests in Docker') {
             steps {
-                echo 'Installing Python dependencies...'
-                // Install dependencies without running tests (no tests detected in project)
-                sh 'python -m venv venv'
-                sh '. venv/bin/activate && pip install -r requirements.txt'
+                container('dind') {
+                    sh '''
+                        docker run --rm $APP_NAME:$IMAGE_TAG \
+                        pytest --maxfail=1 --disable-warnings --cov=. --cov-report=xml
+                    '''
+                }
             }
         }
 
         stage('SonarQube Analysis') {
             steps {
-                echo 'Running SonarQube analysis...'
-                // withSonarQubeEnv sets up environment variables for the scanner
-                withSonarQubeEnv(SONAR_SERVER) {
-                    // 'sonarScanner' is the tool name from Global Tool Configuration
-                    // The scanner will automatically pick up the server URL and token
-                    sh 'sonar-scanner -Dsonar.python.coverage.reportPaths=coverage.xml || echo "Coverage report not found, continuing."'
+                container('sonar-scanner') {
+                    withCredentials([
+                        string(credentialsId: 'sonar-token-2401082', variable: 'SONAR_TOKEN')
+                    ]) {
+                        sh '''
+                            sonar-scanner \
+                              -Dsonar.projectKey=$SONAR_PROJECT \
+                              -Dsonar.host.url=$SONAR_HOST_URL \
+                              -Dsonar.login=$SONAR_TOKEN \
+                              -Dsonar.python.coverage.reportPaths=coverage.xml
+                        '''
+                    }
                 }
             }
         }
 
-        stage('Quality Gate Check') {
+        stage('Login to Docker Registry') {
             steps {
-                echo 'Checking SonarQube Quality Gate status...'
-                timeout(time: 10, unit: 'MINUTES') {
-                    waitForQualityGate abortPipeline: true
+                container('dind') {
+                    sh 'docker --version'
+                    sh 'sleep 10'
+                    sh 'docker login nexus-service-for-docker-hosted-registry.nexus.svc.cluster.local:8085 -u admin -p Changeme@2025'
                 }
             }
         }
 
-        stage('Build and Push Docker Image') {
-            when {
-                // Only run this stage for the 'main' or 'master' branch
-                branch 'main'
-            }
+        stage('Build - Tag - Push Image') {
             steps {
-                script {
-                    echo 'Building and pushing Docker image...'
-                    // Use the build number as the image version for traceability
-                    def imageVersion = env.BUILD_NUMBER
-                    def imageName = "${env.DOCKER_REGISTRY}/${env.APP_NAME}:${imageVersion}"
-                    def latestImageName = "${env.DOCKER_REGISTRY}/${env.APP_NAME}:latest"
+                container('dind') {
+                    sh '''
+                        docker tag $APP_NAME:$IMAGE_TAG \
+                          $REGISTRY_URL/$REGISTRY_REPO/$APP_NAME:$IMAGE_TAG
 
-                    // Use the Docker Pipeline plugin to build and push
-                    docker.withRegistry('https://index.docker.io/v1/', 'DOCKER_CREDENTIALS') {
-                        def dockerImage = docker.build(imageName, '.')
-                        dockerImage.push()
-                        dockerImage.push(latestImageName)
+                        docker push $REGISTRY_URL/$REGISTRY_REPO/$APP_NAME:$IMAGE_TAG
+                        docker pull $REGISTRY_URL/$REGISTRY_REPO/$APP_NAME:$IMAGE_TAG
+                        docker images
+                    '''
+                }
+            }
+        }
+
+        stage('Deploy Application') {
+            steps {
+                container('kubectl') {
+                    dir('k8s-deployment') {
+                        sh '''
+                            kubectl apply -f deployment.yaml
+                            kubectl rollout status deployment/$APP_NAME -n <NAMESPACE>
+                        '''
                     }
                 }
             }
         }
     }
-    post {
-        always {
-            echo 'Pipeline finished.'
-            cleanWs()
-        }
-    }
 }
+

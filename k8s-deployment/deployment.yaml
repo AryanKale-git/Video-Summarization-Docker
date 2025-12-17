@@ -1,0 +1,81 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: 2401082-videosummdocker
+  namespace: 2401082-videosummdocker
+  labels:
+    app: 2401082-videosummdocker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: 2401082-videosummdocker
+  template:
+    metadata:
+      labels:
+        app: 2401082-videosummdocker
+    spec:
+      imagePullSecrets:
+      - name: regcred # Ensure this secret exists in your namespace
+      containers:
+      - name: 2401082-videosummdocker
+        # Image URL matches the Jenkinsfile construction
+        image: nexus-service-for-docker-hosted-registry.nexus.svc.cluster.local:8085/2401082-videosummdocker/2401082-videosummdocker:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 5000
+        env:
+        - name: SECRET_KEY
+          value: "a-very-secure-secret-key-for-production"
+        # Environment variables for Email functionality (Set these in K8s Secrets for production)
+        - name: SMTP_SERVER
+          value: "smtp.gmail.com"
+        - name: SMTP_PORT
+          value: "587"
+        - name: EMAIL_ADDRESS
+          value: "your-email@gmail.com" # Update this
+        - name: EMAIL_PASSWORD
+          value: "your-app-password"    # Update this
+        - name: SERVER_NAME
+          value: "localhost:5000"       # Update if using Ingress domain
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: 2401082-videosummdocker
+  namespace: 2401082-videosummdocker
+spec:
+  type: ClusterIP
+  selector:
+    app: 2401082-videosummdocker
+  ports:
+  - port: 80
+    targetPort: 5000
+    protocol: TCP
+
+# Ingress template (Uncomment and configure if Ingress controller is available)
+# ---
+# apiVersion: networking.k8s.io/v1
+# kind: Ingress
+# metadata:
+#   name: 2401082-videosummdocker-ingress
+#   namespace: 2401082-videosummdocker
+# spec:
+#   rules:
+#   - http:
+#       paths:
+#       - path: /
+#         pathType: Prefix
+#         backend:
+#           service:
+#             name: 2401082-videosummdocker
+#             port:
+#               number: 80
