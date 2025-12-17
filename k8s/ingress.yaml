@@ -14,6 +14,6 @@ spec:
         pathType: Prefix
         backend:
           service:
-            name: 2401082-videosummdocker
+            name: svc-2401082-videosummdocker
             port:
               number: 80
