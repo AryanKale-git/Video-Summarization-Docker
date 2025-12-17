@@ -20,7 +20,7 @@ A Flask-based web application that summarizes videos by detecting and highlighti
 
 1. **Clone the repository**:
    ```bash
-   git clone https://github.com/your-username/video-summarizer.git
+   git clone https://github.com/AryanKale-git/Video-Summarization-Docker.git
    cd video-summ-docker
    ```
 
