@@ -50,12 +50,12 @@ spec:
     }
 
     environment {
-        APP_NAME        = "2401082-videosummdocker"
-        IMAGE_TAG       = "latest"
-        REGISTRY_URL    = "nexus-service-for-docker-hosted-registry.nexus.svc.cluster.local:8085"
-        REGISTRY_REPO   = "2401082-videosummdocker"
-        SONAR_PROJECT   = "2401082-videosummdocker"
-        SONAR_HOST_URL  = "http://my-sonarqube-sonarqube.sonarqube.svc.cluster.local:9000"
+        APP_NAME       = "2401082-videosummdocker"
+        IMAGE_TAG      = "latest"
+        REGISTRY_URL   = "nexus-service-for-docker-hosted-registry.nexus.svc.cluster.local:8085"
+        REGISTRY_REPO  = "2401082-videosummdocker"
+        SONAR_PROJECT  = "2401082-videosummdocker"
+        SONAR_HOST_URL = "http://my-sonarqube-sonarqube.sonarqube.svc.cluster.local:9000"
     }
 
     stages {
@@ -93,7 +93,7 @@ spec:
                             sonar-scanner \
                               -Dsonar.projectKey=$SONAR_PROJECT \
                               -Dsonar.host.url=$SONAR_HOST_URL \
-                              -Dsonar.login=$SONAR_TOKEN \
+                              -Dsonar.token=$SONAR_TOKEN \
                               -Dsonar.python.coverage.reportPaths=coverage.xml
                         '''
                     }
@@ -107,8 +107,7 @@ spec:
                     sh '''
                         docker --version
                         sleep 10
-                        docker login nexus-service-for-docker-hosted-registry.nexus.svc.cluster.local:8085 \
-                          -u admin -p Changeme@2025
+                        echo "Changeme@2025" | docker login $REGISTRY_URL -u admin --password-stdin
                     '''
                 }
             }
@@ -122,8 +121,6 @@ spec:
                           $REGISTRY_URL/$REGISTRY_REPO/$APP_NAME:$IMAGE_TAG
 
                         docker push $REGISTRY_URL/$REGISTRY_REPO/$APP_NAME:$IMAGE_TAG
-                        docker pull $REGISTRY_URL/$REGISTRY_REPO/$APP_NAME:$IMAGE_TAG
-                        docker images
                     '''
                 }
             }
@@ -135,28 +132,25 @@ spec:
                     dir('k8s') {
                         sh '''
                             kubectl apply -f namespace.yaml
-                            
-                            # Create secret for Docker registry credentials (idempotent)
-                            kubectl create secret docker-registry regcred --docker-server=$REGISTRY_URL --docker-username=admin --docker-password=$REGISTRY_CRED --docker-email=jenkins@example.com -n 2401082-videosummdocker --dry-run=client -o yaml | kubectl apply -f -
+
+                            kubectl create secret docker-registry regcred \
+                              --docker-server=$REGISTRY_URL \
+                              --docker-username=admin \
+                              --docker-password=Changeme@2025 \
+                              --docker-email=jenkins@example.com \
+                              -n 2401082-videosummdocker \
+                              --dry-run=client -o yaml | kubectl apply -f -
+
                             kubectl apply -f service.yaml
                             kubectl apply -f deployment.yaml
                             kubectl apply -f ingress.yaml
 
                             kubectl rollout restart deployment/$APP_NAME -n 2401082-videosummdocker
-                            if ! kubectl rollout status deployment/$APP_NAME -n 2401082-videosummdocker --timeout=2m; then
-                                echo "Deployment failed! Fetching debug info..."
-                                kubectl get pods -n 2401082-videosummdocker -l app=$APP_NAME
-                                echo "--- Pod Description ---"
-                                kubectl describe pod -n 2401082-videosummdocker -l app=$APP_NAME
-                                echo "--- Pod Logs ---"
-                                kubectl logs -n 2401082-videosummdocker -l app=$APP_NAME --tail=100 --all-containers
-                                exit 1
-                            fi
+                            kubectl rollout status deployment/$APP_NAME -n 2401082-videosummdocker --timeout=3m
                         '''
                     }
                 }
             }
         }
-
-    } // stages
-} // pipeline
+    }
+}
