@@ -6,6 +6,7 @@ __pycache__/
 *.pyc
 
 # Ignore local user files and sensitive info that are handled by volumes
+.env
 users.db
 uploads/
 
