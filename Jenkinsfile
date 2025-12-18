@@ -143,21 +143,24 @@ spec:
 
 
         stage('Deploy Application') {
-            steps {
-                container('kubectl') {
-                    dir('k8s') {
-                        sh '''
-                            kubectl apply -f namespace.yaml
-                            kubectl apply -f pvc.yaml
-                            kubectl apply -f service.yaml
-                            kubectl apply -f deployment.yaml
-                            kubectl apply -f ingress.yaml
-                            kubectl rollout status deployment/$APP_NAME -n 2401082-videosummdocker
-                        '''
-                    }
-                }
+    steps {
+        container('kubectl') {
+            dir('k8s') {
+                sh '''
+                    kubectl apply -f namespace.yaml
+                    kubectl apply -f pvc.yaml
+                    kubectl apply -f service.yaml
+                    kubectl apply -f deployment.yaml
+                    kubectl apply -f ingress.yaml
+
+                    # 🔑 FORCE a rollout even if deployment spec is unchanged
+                    kubectl rollout restart deployment/$APP_NAME -n 2401082-videosummdocker
+
+                    kubectl rollout status deployment/$APP_NAME -n 2401082-videosummdocker
+                '''
             }
         }
     }
 }
+
 
