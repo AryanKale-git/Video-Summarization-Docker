@@ -10,7 +10,10 @@ spec:
   replicas: 1
 
   strategy:
-    type: Recreate
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
 
   selector:
     matchLabels:
@@ -38,14 +41,7 @@ spec:
           env:
             - name: SECRET_KEY
               value: "a-very-secure-secret-key-for-production"
-            - name: SMTP_SERVER
-              value: "smtp.gmail.com"
-            - name: SMTP_PORT
-              value: "587"
-            - name: EMAIL_ADDRESS
-              value: "your-email@gmail.com"
-            - name: EMAIL_PASSWORD
-              value: "your-app-password"
+
 
           livenessProbe:
             httpGet:
