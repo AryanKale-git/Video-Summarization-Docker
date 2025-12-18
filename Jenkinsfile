@@ -55,7 +55,7 @@ spec:
         REGISTRY_URL    = "nexus-service-for-docker-hosted-registry.nexus.svc.cluster.local:8085"
         REGISTRY_REPO   = "2401082-videosummdocker"
         SONAR_PROJECT   = "2401082-videosummdocker"
-        SONAR_HOST_URL = "http://my-sonarqube-sonarqube.sonarqube.svc.cluster.local:9000"
+        SONAR_HOST_URL  = "http://my-sonarqube-sonarqube.sonarqube.svc.cluster.local:9000"
     }
 
     stages {
@@ -104,9 +104,12 @@ spec:
         stage('Login to Docker Registry') {
             steps {
                 container('dind') {
-                    sh 'docker --version'
-                    sh 'sleep 10'
-                    sh 'docker login nexus-service-for-docker-hosted-registry.nexus.svc.cluster.local:8085 -u admin -p Changeme@2025'
+                    sh '''
+                        docker --version
+                        sleep 10
+                        docker login nexus-service-for-docker-hosted-registry.nexus.svc.cluster.local:8085 \
+                          -u admin -p Changeme@2025
+                    '''
                 }
             }
         }
@@ -125,42 +128,44 @@ spec:
                 }
             }
         }
+
         stage('Safe Cleanup Old Pod') {
-    steps {
-        container('kubectl') {
-            sh '''
-                POD_COUNT=$(kubectl get pods -n 2401082-videosummdocker -l app=2401082-videosummdocker --no-headers | wc -l)
-                if [ "$POD_COUNT" -gt 0 ]; then
-                  echo "Old pod detected. Deleting..."
-                  kubectl delete pod -l app=2401082-videosummdocker -n 2401082-videosummdocker --grace-period=20 --wait=true
-                else
-                  echo "No old pod found. Skipping cleanup."
-                fi
-            '''
-        }
-    }
-} 
+            steps {
+                container('kubectl') {
+                    sh '''
+                        POD_COUNT=$(kubectl get pods -n 2401082-videosummdocker \
+                          -l app=2401082-videosummdocker --no-headers | wc -l)
 
-
-        stage('Deploy Application') {
-    steps {
-        container('kubectl') {
-            dir('k8s') {
-                sh '''
-                    kubectl apply -f namespace.yaml
-                    kubectl apply -f pvc.yaml
-                    kubectl apply -f service.yaml
-                    kubectl apply -f deployment.yaml
-                    kubectl apply -f ingress.yaml
-
-                    # 🔑 FORCE a rollout even if deployment spec is unchanged
-                    kubectl rollout restart deployment/$APP_NAME -n 2401082-videosummdocker
-
-                    kubectl rollout status deployment/$APP_NAME -n 2401082-videosummdocker
-                '''
+                        if [ "$POD_COUNT" -gt 0 ]; then
+                          echo "Old pod detected. Deleting..."
+                          kubectl delete pod -l app=2401082-videosummdocker \
+                            -n 2401082-videosummdocker --grace-period=20 --wait=true
+                        else
+                          echo "No old pod found. Skipping cleanup."
+                        fi
+                    '''
+                }
             }
         }
-    }
-}
 
+        stage('Deploy Application') {
+            steps {
+                container('kubectl') {
+                    dir('k8s') {
+                        sh '''
+                            kubectl apply -f namespace.yaml
+                            kubectl apply -f pvc.yaml
+                            kubectl apply -f service.yaml
+                            kubectl apply -f deployment.yaml
+                            kubectl apply -f ingress.yaml
 
+                            kubectl rollout restart deployment/$APP_NAME -n 2401082-videosummdocker
+                            kubectl rollout status deployment/$APP_NAME -n 2401082-videosummdocker
+                        '''
+                    }
+                }
+            }
+        }
+
+    } // stages
+} // pipeline
