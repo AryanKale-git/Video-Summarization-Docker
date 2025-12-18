@@ -5,60 +5,75 @@ metadata:
   namespace: 2401082-videosummdocker
   labels:
     app: 2401082-videosummdocker
+
 spec:
   replicas: 1
+
+  strategy:
+    type: Recreate
+
   selector:
     matchLabels:
       app: 2401082-videosummdocker
+
   template:
     metadata:
       labels:
         app: 2401082-videosummdocker
+
     spec:
+      terminationGracePeriodSeconds: 20
+
       imagePullSecrets:
-      - name: regcred
+        - name: regcred
+
       containers:
-      - name: 2401082-videosummdocker
-        image: nexus-service-for-docker-hosted-registry.nexus.svc.cluster.local:8085/2401082-videosummdocker/2401082-videosummdocker:latest
-        imagePullPolicy: Always
-        ports:
-        - containerPort: 5000
-        env:
-        - name: SECRET_KEY
-          value: "a-very-secure-secret-key-for-production"
-        - name: SMTP_SERVER
-          value: "smtp.gmail.com"
-        - name: SMTP_PORT
-          value: "587"
-        - name: EMAIL_ADDRESS
-          value: "your-email@gmail.com"
-        - name: EMAIL_PASSWORD
-          value: "your-app-password"
-        - name: SERVER_NAME
-          value: "localhost:5000"
-        volumeMounts:
-        - name: app-storage
-          mountPath: /app/instance
-        livenessProbe:
-          httpGet:
-            path: /login
-            port: 5000
-          initialDelaySeconds: 30
-          periodSeconds: 10
-        readinessProbe:
-          httpGet:
-            path: /login
-            port: 5000
-          initialDelaySeconds: 15
-          periodSeconds: 5
-        resources:
-          requests:
-            memory: "512Mi"
-            cpu: "250m"
-          limits:
-            memory: "1Gi"
-            cpu: "500m"
+        - name: 2401082-videosummdocker
+          image: nexus-service-for-docker-hosted-registry.nexus.svc.cluster.local:8085/2401082-videosummdocker/2401082-videosummdocker:latest
+          imagePullPolicy: Always
+
+          ports:
+            - containerPort: 5000
+
+          env:
+            - name: SECRET_KEY
+              value: "a-very-secure-secret-key-for-production"
+            - name: SMTP_SERVER
+              value: "smtp.gmail.com"
+            - name: SMTP_PORT
+              value: "587"
+            - name: EMAIL_ADDRESS
+              value: "your-email@gmail.com"
+            - name: EMAIL_PASSWORD
+              value: "your-app-password"
+
+          volumeMounts:
+            - name: app-storage
+              mountPath: /app/instance
+
+          livenessProbe:
+            httpGet:
+              path: /login
+              port: 5000
+            initialDelaySeconds: 30
+            periodSeconds: 10
+
+          readinessProbe:
+            httpGet:
+              path: /login
+              port: 5000
+            initialDelaySeconds: 15
+            periodSeconds: 5
+
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "250m"
+            limits:
+              memory: "1Gi"
+              cpu: "500m"
+
       volumes:
-      - name: app-storage
-        persistentVolumeClaim:
-          claimName: video-summ-pvc
+        - name: app-storage
+          persistentVolumeClaim:
+            claimName: video-summ-pvc
