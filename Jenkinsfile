@@ -125,6 +125,22 @@ spec:
                 }
             }
         }
+        stage('Safe Cleanup Old Pod') {
+    steps {
+        container('kubectl') {
+            sh '''
+                POD_COUNT=$(kubectl get pods -n 2401082-videosummdocker -l app=2401082-videosummdocker --no-headers | wc -l)
+                if [ "$POD_COUNT" -gt 0 ]; then
+                  echo "Old pod detected. Deleting..."
+                  kubectl delete pod -l app=2401082-videosummdocker -n 2401082-videosummdocker --grace-period=20 --wait=true
+                else
+                  echo "No old pod found. Skipping cleanup."
+                fi
+            '''
+        }
+    }
+} 
+
 
         stage('Deploy Application') {
             steps {
