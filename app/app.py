@@ -36,9 +36,9 @@ EMAIL_ADDRESS = os.environ.get('EMAIL_ADDRESS')
 EMAIL_PASSWORD = os.environ.get('EMAIL_PASSWORD')
 
 # Set the server name for external URL generation (e.g., 'localhost:5000')
-app.config['SERVER_NAME'] = os.environ.get('SERVER_NAME')
-if not app.config['SERVER_NAME'] and not is_debug:
-    app.logger.warning("SERVER_NAME is not set. External URLs (like for password reset) may not work.")
+server_name = os.environ.get('SERVER_NAME')
+if server_name:
+    app.config['SERVER_NAME'] = server_name
 
 # Create necessary directories
 os.makedirs(os.path.join(app.instance_path, 'uploads'), exist_ok=True)
