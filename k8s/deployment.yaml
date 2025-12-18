@@ -41,6 +41,14 @@ spec:
           env:
             - name: SECRET_KEY
               value: "a-very-secure-secret-key-for-production"
+            - name: EMAIL_ADDRESS
+              value: "kalearyan12345@gmail.com" # CHANGE TO YOUR REAL EMAIL
+            - name: EMAIL_PASSWORD
+              value: "tzxz wrcm hwma sxxn"    # CHANGE TO YOUR REAL APP PASSWORD
+            - name: SMTP_SERVER
+              value: "smtp.gmail.com"
+            - name: SMTP_PORT
+              value: "587"
 
 
           livenessProbe:

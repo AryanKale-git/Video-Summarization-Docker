@@ -10,6 +10,9 @@ spec:
     image: sonarsource/sonar-scanner-cli
     command: ["cat"]
     tty: true
+    volumeMounts:
+    - name: workspace-volume
+      mountPath: /home/jenkins/agent
 
   - name: kubectl
     image: bitnami/kubectl:latest
@@ -25,6 +28,8 @@ spec:
     - name: kubeconfig-secret
       mountPath: /kube/config
       subPath: kubeconfig
+    - name: workspace-volume
+      mountPath: /home/jenkins/agent
 
   - name: dind
     image: docker:dind
@@ -34,9 +39,12 @@ spec:
     - name: DOCKER_TLS_CERTDIR
       value: ""
     volumeMounts:
-    - name: docker-config
       mountPath: /etc/docker/daemon.json
       subPath: daemon.json
+    - name: workspace-volume
+      mountPath: /home/jenkins/agent
+    - name: workspace-volume
+      mountPath: /app
 
   volumes:
   - name: docker-config
@@ -45,6 +53,8 @@ spec:
   - name: kubeconfig-secret
     secret:
       secretName: kubeconfig-secret
+  - name: workspace-volume
+    emptyDir: {}
 '''
         }
     }
