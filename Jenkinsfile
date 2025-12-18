@@ -39,6 +39,7 @@ spec:
     - name: DOCKER_TLS_CERTDIR
       value: ""
     volumeMounts:
+    - name: docker-config
       mountPath: /etc/docker/daemon.json
       subPath: daemon.json
     - name: workspace-volume
