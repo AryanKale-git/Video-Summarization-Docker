@@ -47,10 +47,6 @@ spec:
             - name: EMAIL_PASSWORD
               value: "your-app-password"
 
-          volumeMounts:
-            - name: app-storage
-              mountPath: /app/instance
-
           livenessProbe:
             httpGet:
               path: /login
@@ -72,8 +68,3 @@ spec:
             limits:
               memory: "1Gi"
               cpu: "500m"
-
-      volumes:
-        - name: app-storage
-          persistentVolumeClaim:
-            claimName: video-summ-pvc

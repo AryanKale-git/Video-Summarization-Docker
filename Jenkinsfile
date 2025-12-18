@@ -137,15 +137,7 @@ spec:
                             kubectl apply -f namespace.yaml
                             
                             # Create secret for Docker registry credentials (idempotent)
-                            kubectl create secret docker-registry regcred \
-                                --docker-server=nexus-service-for-docker-hosted-registry.nexus.svc.cluster.local:8085 \
-                                --docker-username=admin \
-                                --docker-password=Changeme@2025 \
-                                --docker-email=jenkins@example.com \
-                                -n 2401082-videosummdocker \
-                                --dry-run=client -o yaml | kubectl apply -f -
-
-                            kubectl apply -f pvc.yaml
+                            kubectl create secret docker-registry regcred --docker-server=$REGISTRY_URL --docker-username=admin --docker-password=$REGISTRY_CRED --docker-email=jenkins@example.com -n 2401082-videosummdocker --dry-run=client -o yaml | kubectl apply -f -
                             kubectl apply -f service.yaml
                             kubectl apply -f deployment.yaml
                             kubectl apply -f ingress.yaml
