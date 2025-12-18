@@ -151,7 +151,15 @@ spec:
                             kubectl apply -f ingress.yaml
 
                             kubectl rollout restart deployment/$APP_NAME -n 2401082-videosummdocker
-                            kubectl rollout status deployment/$APP_NAME -n 2401082-videosummdocker
+                            if ! kubectl rollout status deployment/$APP_NAME -n 2401082-videosummdocker --timeout=2m; then
+                                echo "Deployment failed! Fetching debug info..."
+                                kubectl get pods -n 2401082-videosummdocker -l app=$APP_NAME
+                                echo "--- Pod Description ---"
+                                kubectl describe pod -n 2401082-videosummdocker -l app=$APP_NAME
+                                echo "--- Pod Logs ---"
+                                kubectl logs -n 2401082-videosummdocker -l app=$APP_NAME --tail=100 --all-containers
+                                exit 1
+                            fi
                         '''
                     }
                 }
