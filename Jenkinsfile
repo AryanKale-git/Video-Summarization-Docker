@@ -146,7 +146,7 @@ spec:
                             kubectl apply -f ingress.yaml
 
                             kubectl rollout restart deployment/$APP_NAME -n 2401082-videosummdocker
-                            kubectl rollout status deployment/$APP_NAME -n 2401082-videosummdocker --timeout=3m
+                            kubectl rollout status deployment/$APP_NAME -n 2401082-videosummdocker --timeout=10m
                         '''
                     }
                 }

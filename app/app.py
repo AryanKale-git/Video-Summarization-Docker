@@ -41,8 +41,11 @@ if server_name:
     app.config['SERVER_NAME'] = server_name
 
 # Create necessary directories
-os.makedirs(os.path.join(app.instance_path, 'uploads'), exist_ok=True)
-os.makedirs("templates", exist_ok=True)
+try:
+    os.makedirs(os.path.join(app.instance_path, 'uploads'), exist_ok=True)
+    os.makedirs("templates", exist_ok=True)
+except OSError as e:
+    app.logger.warning(f"Could not create directories: {e}. If running with read-only filesystem, ensure these exist.")
 
 DATABASE = os.path.join(app.instance_path, 'users.db')
 
