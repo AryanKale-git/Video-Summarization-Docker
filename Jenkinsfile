@@ -98,7 +98,7 @@ spec:
             steps {
                 container('sonar-scanner') {
                     withCredentials([
-                        string(credentialsId: '2401082-videosummdocker', variable: 'SONAR_TOKEN')
+                        string(credentialsId: 'sonar-token-2401082', variable: 'SONAR_TOKEN')
                     ]) {
                         sh '''
                             sonar-scanner \
