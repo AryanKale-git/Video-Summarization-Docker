@@ -32,7 +32,7 @@ spec:
 
       containers:
         - name: 2401082-videosummdocker
-          image: nexus-service-for-docker-hosted-registry.nexus.svc.cluster.local:8085/2401082-videosummdocker/2401082-videosummdocker:latest
+          image: 127.0.0.1:30085/2401082-videosummdocker/2401082-videosummdocker:latest
           imagePullPolicy: Always
 
           ports:
